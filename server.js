@@ -16,6 +16,14 @@ const db = mysql.createConnection(
 
 initQuery();
 
+function initQuery() {
+    inquirer
+        .prompt(initQuestion)
+        .then(({intro}) => {
+            handleInitQuery(intro);
+        })
+};
+
 function handleInitQuery(intro) {
     switch (intro) {
         case "View all departments":
@@ -44,14 +52,6 @@ function handleInitQuery(intro) {
             break;
     }
 }
-
-function initQuery() {
-    inquirer
-        .prompt(initQuestion)
-        .then(({intro}) => {
-            handleInitQuery(intro);
-        })
-};
 
 function handleDeptQuery() {
     inquirer
@@ -128,31 +128,47 @@ function addDepartment(department) {
 function addRole(title, salary, id) {
     const sql = `INSERT INTO role (title, salary, department_id) VALUES ?`;
     const values = [[title, salary, id]];
-    db.query(sql, [values], (err, res) => {
-        console.log("A new role has been successfully added");
-    });
+    if (isNaN(salary) || isNaN(id)) {
+        console.log("\nSalary and/or department_id must be a number\n");
+        return initQuery();
+    } else {
+        db.query(sql, [values], (err, res) => {
+            console.log("\nA new role has been successfully added\n");
+        });
 
-    viewAllRoles();
+        viewAllRoles();
+    }
 };
 
 function addEmployee(firstN, lastN, rID, mID) {
     const sql = `INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES ?`;
     const values = [[firstN, lastN, rID, mID]];
-    db.query(sql, [values], (err, res) => {
-        console.log("A new employee has been successfully added");
-    });
 
-    viewAllEmployees();
+    if (isNaN(rID) || isNaN(mID)) {
+        console.log(`\nRole ID and Manager ID must be a number\n`);
+        return initQuery();
+    } else {
+        db.query(sql, [values], (err, res) => {
+            console.log("\nA new employee has been successfully added");
+        });
+    
+        viewAllEmployees();
+    };
 };
 
 function updateEmployeeRole(rID, eID) {
     const sql = `UPDATE employee SET role_id = ? WHERE id = ?`;
     const values = [rID, eID];
-    db.query(sql, values, (err, res) => {
-        console.log("This employee's role has been updated successfully");
-    });
-
-    viewAllEmployees();
+    if (isNaN(rID) || isNaN(eID)) {
+        console.log(`\nEmployee ID and new role ID must be a number`);
+        return initQuery();
+    } else {
+        db.query(sql, values, (err, res) => {
+            console.log("\nThis employee's role has been updated successfully");
+        });
+    
+        viewAllEmployees();    
+    }
 };
 
 
