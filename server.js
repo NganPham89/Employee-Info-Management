@@ -2,6 +2,8 @@ const mysql = require("mysql2");
 const inquirer = require("inquirer");
 require("console.table");
 
+const {initQuestion, deptQuestion, roleQuestion, employeeQuestion, roleUpdateQuestion} = require("./lib/questions");
+
 const db = mysql.createConnection(
     {
         host: 'localhost',
@@ -12,76 +14,7 @@ const db = mysql.createConnection(
       console.log(`Connected to the employees_db database.`)
 );
 
-const initQuestion = [
-    {
-        type: "list",
-        name: "intro",
-        message: "What would you like to do?",
-        choices: ["View all departments", "View all roles", "View all employees", "Add a department", "Add a role", "Add an employee", "Update an employee's role"]
-    }
-];
-
-const deptQuestion = [
-    {
-        type: "text",
-        name: "deptName",
-        message: "What is the name of the new department?"
-    }
-]
-
-const roleQuestion = [
-    {
-        type: "text",
-        name: "title",
-        message: "What is the title of the new role?"
-    },
-    {
-        type: "number",
-        name: "salary",
-        message: "What is the salary for the new role?"
-    },
-    {
-        type: "number",
-        name: "deptID",
-        message: "Which department does this role belong to? (Enter department ID)"
-    }
-];
-
-const employeeQuestion = [
-    {
-        type: "text",
-        name: "fName",
-        message: "Enter employee's first name"
-    },
-    {
-        type: "text",
-        name: "lName",
-        message: "Enter employee's last name"
-    },
-    {
-        type: "number",
-        name: "roleID",
-        message: "What is this employee's role? (Enter role ID)"
-    },
-    {
-        type: "number",
-        name: "managerID",
-        message: "Who will supervise this employee? (Enter manager ID)"
-    }
-];
-
-const roleUpdateQuestion = [
-    {
-        type: "number",
-        name: "empID",
-        message: "Enter employee ID"
-    },
-    {
-        type: "number",
-        name: "roleID", 
-        message: "Enter role ID"
-    }
-];
+initQuery();
 
 function handleInitQuery(intro) {
     switch (intro) {
@@ -106,6 +39,9 @@ function handleInitQuery(intro) {
         case "Update an employee's role":
             handleRoleUpdateQuery();
             break;
+        case "Exit":
+            db.end();
+            break;
     }
 }
 
@@ -116,8 +52,6 @@ function initQuery() {
             handleInitQuery(intro);
         })
 };
-
-initQuery();
 
 function handleDeptQuery() {
     inquirer
@@ -152,34 +86,40 @@ function handleRoleUpdateQuery() {
 };
 
 function viewAllDepartments() {
-    const sql = `SELECT * FROM department`;
+    const sql = `SELECT * FROM department ORDER BY id`;
     db.query(sql, (err, res) => {
-        console.table(res);
+        console.table(`\nList of departments with ID and names`, res);
+        return initQuery();
     });
-    initQuery();
 };
 
 function viewAllRoles() {
-    const sql = `SELECT * FROM role`;
+    const sql = `SELECT role.id, role.title, role.salary, department.name AS department_name
+                 FROM role
+                 JOIN department ON department.id = role.department_id;`;
     db.query(sql, (err, res) => {
-        console.table(res);
+        console.table(`\nList of all roles with ID, salary, and department`,res);
+        return initQuery();
     });
-    initQuery();
 };
 
 function viewAllEmployees() {
-    const sql = `SELECT * FROM employee`;
+    const sql = `SELECT e.id, e.first_name, e.last_name, role.title, department.name AS department_name, role.salary, CONCAT(m.first_name," ", m.last_name) AS manager_name
+                 FROM employee e
+                 LEFT JOIN employee m ON e.manager_id = m.id
+                 JOIN role ON e.role_id = role.id
+                 JOIN employees_db.department ON role.department_id = department.id;`;
     db.query(sql, (err, res) => {
-        console.table(res);
+        console.table(`\nList of all employees and their roles`,res);
+        return initQuery();
     });
-    initQuery();
 };
 
 function addDepartment(department) {
     const sql = `INSERT INTO department (name) VALUES (?)`;
     const params = department;
     db.query(sql, params, (err, res) => {
-        console.log("A new department has been successfully added");
+        console.log("\nA new department has been successfully added");
     });
 
     viewAllDepartments();
