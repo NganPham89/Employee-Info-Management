@@ -21,23 +21,142 @@ const initQuestion = [
     }
 ];
 
-function handleInitQuery(intro) {
+const deptQuestion = [
+    {
+        type: "text",
+        name: "deptName",
+        message: "What is the name of the new department?"
+    }
+]
 
+const roleQuestion = [
+    {
+        type: "text",
+        name: "title",
+        message: "What is the title of the new role?"
+    },
+    {
+        type: "number",
+        name: "salary",
+        message: "What is the salary for the new role?"
+    },
+    {
+        type: "number",
+        name: "deptID",
+        message: "Which department does this role belong to? (Enter department ID)"
+    }
+];
+
+const employeeQuestion = [
+    {
+        type: "text",
+        name: "fName",
+        message: "Enter employee's first name"
+    },
+    {
+        type: "text",
+        name: "lName",
+        message: "Enter employee's last name"
+    },
+    {
+        type: "number",
+        name: "roleID",
+        message: "What is this employee's role? (Enter role ID)"
+    },
+    {
+        type: "number",
+        name: "managerID",
+        message: "Who will supervise this employee? (Enter manager ID)"
+    }
+];
+
+const roleUpdateQuestion = [
+    {
+        type: "number",
+        name: "empID",
+        message: "Enter employee ID"
+    },
+    {
+        type: "number",
+        name: "roleID", 
+        message: "Enter role ID"
+    }
+];
+
+function handleInitQuery(intro) {
+    switch (intro) {
+        case "View all departments":
+            viewAllDepartments();
+            break;
+        case "View all roles":
+            viewAllRoles();
+            break;
+        case "View all employees":
+            viewAllEmployees();
+            break;
+        case "Add a department":
+            handleDeptQuery();
+            break;
+        case "Add a role":
+            handleRoleQuery();
+            break;
+        case "Add an employee":
+            handleEmployeeQuery();
+            break;
+        case "Update an employee's role":
+            handleRoleUpdateQuery();
+            break;
+    }
 }
 
 function initQuery() {
     inquirer
         .prompt(initQuestion)
-        .then(
+        .then(({intro}) => {
+            handleInitQuery(intro);
+        })
+};
 
-        )
-}
+initQuery();
+
+function handleDeptQuery() {
+    inquirer
+        .prompt(deptQuestion)
+        .then(({deptName}) => {
+            addDepartment(deptName);
+        });
+};
+
+function handleRoleQuery() {
+    inquirer
+        .prompt(roleQuestion)
+        .then(({title, salary, deptID}) => {
+            addRole(title, salary, deptID);
+        });
+};
+
+function handleEmployeeQuery() {
+    inquirer
+        .prompt(employeeQuestion)
+        .then(({fName, lName, roleID, managerID}) => {
+            addEmployee(fName, lName, roleID, managerID);
+        });
+};
+
+function handleRoleUpdateQuery() {
+    inquirer
+        .prompt(roleUpdateQuestion)
+        .then(({empID, roleID}) => {
+            updateEmployeeRole(roleID, empID);
+        });
+};
 
 function viewAllDepartments() {
     const sql = `SELECT * FROM department`;
     db.query(sql, (err, res) => {
         console.table(res);
     });
+    initQuery();
 };
 
 function viewAllRoles() {
@@ -45,6 +164,7 @@ function viewAllRoles() {
     db.query(sql, (err, res) => {
         console.table(res);
     });
+    initQuery();
 };
 
 function viewAllEmployees() {
@@ -52,6 +172,7 @@ function viewAllEmployees() {
     db.query(sql, (err, res) => {
         console.table(res);
     });
+    initQuery();
 };
 
 function addDepartment(department) {
@@ -84,7 +205,7 @@ function addEmployee(firstN, lastN, rID, mID) {
     viewAllEmployees();
 };
 
-function updateEmployeeRole(rID, eID, lastN) {
+function updateEmployeeRole(rID, eID) {
     const sql = `UPDATE employee SET role_id = ? WHERE id = ?`;
     const values = [rID, eID];
     db.query(sql, values, (err, res) => {
@@ -93,4 +214,5 @@ function updateEmployeeRole(rID, eID, lastN) {
 
     viewAllEmployees();
 };
+
 
