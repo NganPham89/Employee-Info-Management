@@ -1,5 +1,6 @@
 const mysql = require("mysql2");
 const inquirer = require("inquirer");
+require('dotenv').config();
 require("console.table");
 
 const {initQuestion, deptQuestion, roleQuestion, employeeQuestion, roleUpdateQuestion} = require("./lib/questions");
@@ -7,9 +8,9 @@ const {initQuestion, deptQuestion, roleQuestion, employeeQuestion, roleUpdateQue
 const db = mysql.createConnection(
     {
         host: 'localhost',
-        user: 'root',
-        password: 'choghegiaSQL01=',
-        database: 'employees_db'
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME
       },
       console.log(`Connected to the employees_db database.`)
 );
@@ -35,6 +36,9 @@ function handleInitQuery(intro) {
         case "View all employees":
             viewAllEmployees();
             break;
+        case "View all employees by department":
+            viewEmployeeByDept();
+            break;
         case "Add a department":
             handleDeptQuery();
             break;
@@ -46,6 +50,9 @@ function handleInitQuery(intro) {
             break;
         case "Update an employee's role":
             handleRoleUpdateQuery();
+            break;
+        case "Remove an employee":
+            handleEmployeeRemove();
             break;
         case "Exit":
             db.end();
@@ -80,8 +87,16 @@ function handleEmployeeQuery() {
 function handleRoleUpdateQuery() {
     inquirer
         .prompt(roleUpdateQuestion)
-        .then(({empID, roleID}) => {
-            updateEmployeeRole(roleID, empID);
+        .then(({fName, lName, roleID}) => {
+            updateEmployeeRole(roleID, fName, lName);
+        });
+};
+
+function handleEmployeeRemove() {
+    inquirer
+        .prompt(employeeQuestion)
+        .then(({fName, lName}) => {
+            removeEmployee(fName, lName);
         });
 };
 
@@ -110,10 +125,29 @@ function viewAllEmployees() {
                  JOIN role ON e.role_id = role.id
                  JOIN employees_db.department ON role.department_id = department.id;`;
     db.query(sql, (err, res) => {
+        if (err) {
+            console.log(err);
+        }
         console.table(`\nList of all employees and their roles`,res);
         return initQuery();
     });
 };
+
+function viewEmployeeByDept() {
+    const sql = `SELECT e.id, e.first_name, e.last_name, department.name AS department_name
+                 FROM employee e
+                 LEFT JOIN employee m ON e.manager_id = m.id
+                 LEFT JOIN role ON e.role_id = role.id
+                 LEFT JOIN employees_db.department ON role.department_id = department.id
+                 ORDER BY department_name;`;
+    db.query(sql, (err, res) => {
+        if (err) {
+            console.log(err);
+        }
+        console.table(`\nList of all employees based on departments`, res);
+        return initQuery();
+    })
+}
 
 function addDepartment(department) {
     const sql = `INSERT INTO department (name) VALUES (?)`;
@@ -156,14 +190,17 @@ function addEmployee(firstN, lastN, rID, mID) {
     };
 };
 
-function updateEmployeeRole(rID, eID) {
-    const sql = `UPDATE employee SET role_id = ? WHERE id = ?`;
-    const values = [rID, eID];
-    if (isNaN(rID) || isNaN(eID)) {
+function updateEmployeeRole(rID, fName, lName) {
+    const sql = `UPDATE employee SET role_id = ? WHERE first_name = ? AND last_name = ?`;
+    const values = [rID, fName, lName];
+    if (isNaN(rID)) {
         console.log(`\nEmployee ID and new role ID must be a number`);
         return initQuery();
     } else {
         db.query(sql, values, (err, res) => {
+            if (err) {
+                console.log(err);
+            }
             console.log("\nThis employee's role has been updated successfully");
         });
     
@@ -171,4 +208,15 @@ function updateEmployeeRole(rID, eID) {
     }
 };
 
-
+function removeEmployee(fName, lName) {
+    const sql = `DELETE FROM employees_db.employee WHERE first_name = ? AND last_name = ?`;
+    const values = [fName, lName];
+    db.query(sql, values, (err, res) => {
+        if (err) {
+            console.log(`\nName cannot be found`, err);
+        } else {
+            console.log(`\nSuccessfully remove employee from database`);
+            return initQuery();
+        }
+    });
+};
