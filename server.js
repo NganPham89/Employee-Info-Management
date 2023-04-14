@@ -3,7 +3,7 @@ const inquirer = require("inquirer");
 require('dotenv').config();
 require("console.table");
 
-const {initQuestion, deptQuestion, roleQuestion, employeeQuestion, roleUpdateQuestion} = require("./lib/questions");
+const {initQuestion, deptQuestion, roleQuestion, employeeQuestion, roleUpdateQuestion, employeeName} = require("./lib/questions");
 
 const db = mysql.createConnection(
     {
@@ -94,7 +94,7 @@ function handleRoleUpdateQuery() {
 
 function handleEmployeeRemove() {
     inquirer
-        .prompt(employeeQuestion)
+        .prompt(employeeName)
         .then(({fName, lName}) => {
             removeEmployee(fName, lName);
         });
@@ -215,8 +215,9 @@ function removeEmployee(fName, lName) {
         if (err) {
             console.log(`\nName cannot be found`, err);
         } else {
-            console.log(`\nSuccessfully remove employee from database`);
-            return initQuery();
+            console.log(`\nSuccessfully remove employee from database\n`);
         }
     });
+
+    viewAllEmployees();
 };
